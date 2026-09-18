@@ -3,6 +3,7 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Random;
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 
 // we implemented the ActionListener for the snake to repainted every 100ms
 //  and the keyListener for the program to listen to the arrow keys events
@@ -24,6 +25,8 @@ public class SnakeGame extends JPanel implements ActionListener , KeyListener{
 
     // Snake
     Tile snakeHead;
+    ArrayList<Tile> snakeBody;
+
     // Food
     Tile food;
     Random random;
@@ -33,6 +36,9 @@ public class SnakeGame extends JPanel implements ActionListener , KeyListener{
     int velocityX;
     int velocityY;
 
+    boolean gameOver = false; 
+    JButton replayButton;
+
     SnakeGame(int boardWidth, int boardHeight){
         this.boardWidth = boardWidth;
         this.boardHeight = boardHeight;
@@ -41,8 +47,10 @@ public class SnakeGame extends JPanel implements ActionListener , KeyListener{
         setBackground(Color.BLACK);
         addKeyListener(this);
         setFocusable(true);
+        //  replay button
 
         snakeHead = new Tile(5,5);
+        snakeBody = new ArrayList<Tile>();
 
         food = new Tile(10,10);
         random = new Random();
@@ -53,11 +61,14 @@ public class SnakeGame extends JPanel implements ActionListener , KeyListener{
 
         gameLoop = new Timer(100 , this);
         gameLoop.start();
+
+        
     }
 
     public void paintComponent(Graphics g){
         super.paintComponent(g);
         draw(g);
+        
     }
 
     public void draw(Graphics g){
@@ -73,47 +84,109 @@ public class SnakeGame extends JPanel implements ActionListener , KeyListener{
         // Food
         g.setColor(Color.RED);
         g.fillRect(food.x*tileSize, food.y*tileSize, tileSize, tileSize);
-        // Snake
+        // Snake head
         g.setColor(Color.green);
         g.fillRect(snakeHead.x * tileSize, snakeHead.y * tileSize, tileSize, tileSize);
+        // Snake body
+        for(int i = 0; i < snakeBody.size() ; i++){
+            Tile snakePart = snakeBody.get(i);
+            g.fillRect(snakePart.x * tileSize , snakePart.y * tileSize , tileSize , tileSize);
+        }
+
+
+        // Score
+        g.setFont(new Font("Arial" , Font.PLAIN , 16));
+        if(gameOver){
+            g.setColor(Color.red);
+            g.drawString("Game Over : " + String.valueOf(snakeBody.size()) , tileSize-16 , tileSize);
+        }
+        else {
+            g.drawString("Score" +  String.valueOf(snakeBody.size()), tileSize - 16 , tileSize);
+        }
     }
     public void placeFood(){
         food.x = random.nextInt(boardWidth/tileSize); //600/25 = 24 
         food.y = random.nextInt(boardHeight/tileSize);
     }
 
+    // function to detect the collision between the snake's head and the food
+    public boolean collision(Tile  tile1 , Tile tile2){
+        return tile1.x == tile2.x && tile1.y == tile2.y;
+    }
+
     public void move(){
+        // eat food 
+        if (collision(snakeHead , food)){
+            snakeBody.add(new Tile(food.x , food.y));
+            placeFood();
+        }
+
+        // each tile needs to follow the one before it that that s why we're going
+        // to iterate through the arrayList backwards 
+        //  Snake Body
+        for(int i = snakeBody.size()-1 ; i >= 0 ; i--){
+            Tile snakePart = snakeBody.get(i);
+            if(i == 0){
+                snakePart.x = snakeHead.x;
+                snakePart.y = snakeHead.y;
+            }
+            else{
+                Tile prevSnakePart = snakeBody.get(i-1);
+                snakePart.x = prevSnakePart.x;
+                snakePart.y = prevSnakePart.y;
+            }
+        }
+
+
+        // snake head
         snakeHead.x += velocityX;
         snakeHead.y += velocityY;
+
+        // game over conditions
+        for(int i = 0 ; i < snakeBody.size() ; i++){
+            Tile snakePart = snakeBody.get(i);
+            if(collision(snakeHead , snakePart)){
+                gameOver = true;
+            }
+        }
+
+
+        if (snakeHead.x*tileSize < 0 || snakeHead.x*tileSize >boardWidth
+            || snakeHead.y *tileSize < 0 || snakeHead.y*tileSize > boardHeight){
+                gameOver=true;
+            }
     }
 
     @Override
     public void actionPerformed(ActionEvent e){
         // what we're doing here is that actionPerformed will run repaint every 100ms in loog 
-        // and repaint itself will basically call draw over and over again
+        // and repaint() itself will basically call draw() over and over again
         move();
         repaint();
+        if (gameOver){
+            gameLoop.stop();
+        }
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         // if we press the up arrow we move the snake on the Y moving towards the 0 so negative
-        if(e.getKeyCode()==KeyEvent.VK_UP ){
+        if(e.getKeyCode()==KeyEvent.VK_UP && velocityY != 1){
             velocityX = 0;
             velocityY = -1;
         }
         // down arrow moving down y axis
-        else if (e.getKeyCode() == KeyEvent.VK_DOWN){
+        else if (e.getKeyCode() == KeyEvent.VK_DOWN && velocityY != -1){
             velocityX = 0;
             velocityY = 1;
         }
         // left arrow moving on the x axis to the left (negative)
-        else if (e.getKeyCode() == KeyEvent.VK_LEFT){
+        else if (e.getKeyCode() == KeyEvent.VK_LEFT && velocityX != 1){
             velocityX = -1;
             velocityY = 0;
         }
         // right arrow moving forward on the x axis 
-        else if (e.getKeyCode() == KeyEvent.VK_RIGHT){
+        else if (e.getKeyCode() == KeyEvent.VK_RIGHT && velocityX != -1){
             velocityX = 1;
             velocityY = 0;
         }
