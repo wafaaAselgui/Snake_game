@@ -48,6 +48,19 @@ public class SnakeGame extends JPanel implements ActionListener , KeyListener{
         addKeyListener(this);
         setFocusable(true);
         //  replay button
+        setFocusable(true);
+        setLayout(null);
+
+        replayButton = new JButton("Replay");
+        replayButton.setBounds(250, 330, 100, 40);
+        replayButton.setVisible(false);
+        replayButton.setFont(new Font("Arial", Font.PLAIN ,18));
+        replayButton.setBackground(Color.GREEN);
+        replayButton.setForeground(Color.WHITE);
+        replayButton.setFocusable(false);
+        replayButton.addActionListener(e -> restartGame());
+
+        add(replayButton);
 
         snakeHead = new Tile(5,5);
         snakeBody = new ArrayList<Tile>();
@@ -73,14 +86,17 @@ public class SnakeGame extends JPanel implements ActionListener , KeyListener{
 
     public void draw(Graphics g){
         // Grid
-        for(int i = 0 ; i < boardWidth/tileSize ; i++){
-            // we need a starting point and an end point that's why we have
-            // (x1 , y1 , x2 , y2)
-            // the first line here is for vertical lines , from y=0 to the height (x goes from left to right)
-            g.drawLine(i*tileSize , 0 , i*tileSize , boardHeight);
-            //  the second line we are drawing horizontally starts from x=0 to the board width so we re changing the y coordinate 
-            g.drawLine(0, i*tileSize, boardWidth, i*tileSize);
-        }
+        // for(int i = 0 ; i < boardWidth/tileSize ; i++){
+        //     // we need a starting point and an end point that's why we have
+        //     // (x1 , y1 , x2 , y2)
+        //     // the first line here is for vertical lines , from y=0 to the height (x goes from left to right)
+        //     g.drawLine(i*tileSize , 0 , i*tileSize , boardHeight);
+        //     //  the second line we are drawing horizontally starts from x=0 to the board width so we re changing the y coordinate 
+        //     g.drawLine(0, i*tileSize, boardWidth, i*tileSize);
+        // }
+
+
+
         // Food
         g.setColor(Color.RED);
         g.fillRect(food.x*tileSize, food.y*tileSize, tileSize, tileSize);
@@ -95,13 +111,44 @@ public class SnakeGame extends JPanel implements ActionListener , KeyListener{
 
 
         // Score
-        g.setFont(new Font("Arial" , Font.PLAIN , 16));
-        if(gameOver){
-            g.setColor(Color.red);
-            g.drawString("Game Over : " + String.valueOf(snakeBody.size()) , tileSize-16 , tileSize);
-        }
+        
+        if (gameOver) {
+            // YOU LOST
+            g.setColor(Color.RED);
+            g.setFont(new Font("Courier New", Font.BOLD, 50));
+
+            String lostText = "YOU LOST BOII !! ";
+
+            FontMetrics metrics = g.getFontMetrics();
+            int textWidth = metrics.stringWidth(lostText);
+
+            int textX = (boardWidth - textWidth) / 2;
+            int textY = 270;
+
+            g.drawString(lostText, textX, textY);
+
+            // Score
+            g.setFont(new Font("Courier New", Font.BOLD, 18));
+
+            String scoreText = "SCORE: " + snakeBody.size();
+
+            metrics = g.getFontMetrics();
+            int scoreWidth = metrics.stringWidth(scoreText);
+
+            int scoreX = (boardWidth - scoreWidth) / 2;
+
+            g.drawString(scoreText, scoreX, textY + 35);
+
+        } 
         else {
-            g.drawString("Score" +  String.valueOf(snakeBody.size()), tileSize - 16 , tileSize);
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.PLAIN, 16));
+
+            g.drawString(
+                "SCORE: " + snakeBody.size(),
+                tileSize - 16,
+                tileSize
+            );
         }
     }
     public void placeFood(){
@@ -165,7 +212,38 @@ public class SnakeGame extends JPanel implements ActionListener , KeyListener{
         repaint();
         if (gameOver){
             gameLoop.stop();
+            replayButton.setVisible(true);
         }
+    }
+
+    public void restartGame(){
+
+        // Reset snake position
+        snakeHead = new Tile(5, 5);
+
+        // Remove the old body
+        snakeBody.clear();
+
+        // Reset food
+        placeFood();
+
+        // Reset movement
+        velocityX = 0;
+        velocityY = 0;
+
+        // Reset game state
+        gameOver = false;
+
+        // Hide replay button
+        replayButton.setVisible(false);
+
+        // Restart timer
+        gameLoop.start();
+
+        // Make sure the panel receives keyboard input
+        requestFocusInWindow();
+
+        repaint();
     }
 
     @Override
